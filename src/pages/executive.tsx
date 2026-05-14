@@ -13,10 +13,55 @@ import {
 import {
   Download, FileDown, Presentation, Sparkle, ArrowRight, AlertTriangle, TrendingUp,
 } from "lucide-react";
+import { downloadPDF, downloadPPTX, downloadXLSX, type ReportPayload } from "@/lib/exports";
+import { useToast } from "@/hooks/use-toast";
 
 export default function ExecutiveView({ onOpenAI }: { onOpenAI: () => void }) {
   const accentOrder: Array<"primary" | "coral" | "orange" | "purple2" | "navy" | "primary"> =
     ["primary", "purple2", "coral", "orange", "navy", "primary"];
+  const { toast } = useToast();
+
+  const buildExecPack = (): ReportPayload => ({
+    title: "Executive Pack · May 2026",
+    subtitle: "D&I Portfolio · health, value, risks and Vision 2030 alignment",
+    owner: "Raid Alghamdi · Chief of Strategy & Business Excellence",
+    kpis: [
+      { label: "Active projects",   value: "47",       hint: "+6 QoQ" },
+      { label: "Value realized YTD",value: "142M SAR", hint: "+18M MoM" },
+      { label: "Budget utilized",   value: "68%",      hint: "+4 pts" },
+      { label: "On-time delivery",  value: "84%",      hint: "+2 pts" },
+    ],
+    sections: [
+      { heading: "Portfolio health", bullets: [
+        "28 of 47 active projects on track — overall RAG: Amber-Green",
+        "7 critical risks open, 2 escalated to ExCo (regulatory deadline, SI ramp)",
+        "Squad capacity averaging 87% — one squad (ML Platform) overloaded at 112%",
+      ]},
+      { heading: "Value realization", bullets: [
+        "142M SAR realized YTD against 156M plan — 91% realization rate",
+        "Forecast FY: 172M SAR (+12% vs plan), driven by GenAI Knowledge Assistant",
+        "Self-Service BI Rollout leading at 88% realization",
+      ]},
+      { heading: "Vision 2030 contribution", bullets: [
+        "Composite contribution score: 82/100 (+4 QoQ)",
+        "Strongest themes: Digital Economy, Government Effectiveness",
+        "Underweight theme: Workforce Capability — recommend reallocation in Q3",
+      ]},
+      { heading: "Top risks for ExCo", bullets: risks.slice(0, 5).map(r => `${r.id} · ${r.title} · ${r.severity} · owner ${r.owner}`)},
+      { heading: "Vendor performance", bullets: vendors.slice(0, 6).map(v => `${v.name} · perf ${v.perf}/100 · SLA ${v.sla}% · ${v.status}`) },
+    ],
+  });
+
+  const onPPT = () => { downloadPPTX(buildExecPack(), "executive-pack"); toast({ title: "PowerPoint ready", description: "Executive Pack downloaded." }); };
+  const onPDF = () => { downloadPDF(buildExecPack(),  "executive-pack"); toast({ title: "PDF ready",        description: "Executive Pack downloaded." }); };
+  const onXLS = () => {
+    const rows = projects.map(p => ({
+      Code: p.id, Project: p.name, Portfolio: p.portfolio, Status: p.status,
+      Progress: `${p.progress}%`, Budget: `${p.budgetUsed}%`, Owner: p.owner, Deadline: p.deadline, Priority: p.priority,
+    }));
+    downloadXLSX(rows, "portfolio-snapshot");
+    toast({ title: "Excel ready", description: "Portfolio snapshot downloaded as CSV." });
+  };
 
   return (
     <div className="space-y-7">
@@ -43,13 +88,13 @@ export default function ExecutiveView({ onOpenAI }: { onOpenAI: () => void }) {
               <Sparkle className="size-4" /> Ask Copilot for executive brief
             </Button>
             <div className="grid grid-cols-3 gap-1.5">
-              <Button variant="secondary" className="h-9 rounded-xl gap-1.5 bg-white/10 text-white hover:bg-white/15 border-0 text-[12px]">
+              <Button onClick={onPPT} data-testid="button-exec-ppt" variant="secondary" className="h-9 rounded-xl gap-1.5 bg-white/10 text-white hover:bg-white/15 border-0 text-[12px]">
                 <Presentation className="size-3.5" /> PPT
               </Button>
-              <Button variant="secondary" className="h-9 rounded-xl gap-1.5 bg-white/10 text-white hover:bg-white/15 border-0 text-[12px]">
+              <Button onClick={onPDF} data-testid="button-exec-pdf" variant="secondary" className="h-9 rounded-xl gap-1.5 bg-white/10 text-white hover:bg-white/15 border-0 text-[12px]">
                 <FileDown className="size-3.5" /> PDF
               </Button>
-              <Button variant="secondary" className="h-9 rounded-xl gap-1.5 bg-white/10 text-white hover:bg-white/15 border-0 text-[12px]">
+              <Button onClick={onXLS} data-testid="button-exec-xls" variant="secondary" className="h-9 rounded-xl gap-1.5 bg-white/10 text-white hover:bg-white/15 border-0 text-[12px]">
                 <Download className="size-3.5" /> XLS
               </Button>
             </div>

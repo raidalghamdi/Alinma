@@ -4,10 +4,14 @@ import { Input } from "@/components/ui/input";
 import { PageHeader, SectionCard, StatusPill, MiniProgress, Tag } from "@/components/primitives";
 import { projects } from "@/lib/mock-data";
 import { Filter, LayoutGrid, List, ArrowRight, Search } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function PortfolioPage() {
+  const { toast } = useToast();
   const [view, setView] = useState<"grid" | "table">("grid");
   const [q, setQ] = useState("");
+  const onOpenProject = (p: typeof projects[number]) => toast({ title: p.name, description: `${p.id} · ${p.status} · ${p.progress}% complete · owner ${p.owner}` });
+  const onFilter = () => toast({ title: "Filter", description: "Project filter panel would open here." });
   const filtered = projects.filter(p =>
     !q ||
     p.name.toLowerCase().includes(q.toLowerCase()) ||
@@ -27,7 +31,7 @@ export default function PortfolioPage() {
               <Search className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <Input value={q} onChange={e => setQ(e.target.value)} placeholder="Search projects, portfolio, owner…" className="pl-9 h-9 rounded-xl" />
             </div>
-            <Button variant="outline" className="h-9 rounded-xl gap-1.5"><Filter className="size-3.5" /> Filter</Button>
+            <Button onClick={onFilter} variant="outline" className="h-9 rounded-xl gap-1.5"><Filter className="size-3.5" /> Filter</Button>
             <div className="flex bg-muted rounded-xl p-0.5">
               <button onClick={() => setView("grid")} className={`h-8 px-3 rounded-lg text-[12px] flex items-center gap-1.5 transition-all ${view === "grid" ? "bg-card shadow-soft" : "text-muted-foreground"}`}>
                 <LayoutGrid className="size-3.5" /> Grid
@@ -80,7 +84,7 @@ export default function PortfolioPage() {
                   <div className="text-muted-foreground">Deadline</div>
                   <div className="font-medium tabular-nums">{p.deadline}</div>
                 </div>
-                <Button size="sm" variant="ghost" className="h-7 px-2 text-[11px] gap-1">Open <ArrowRight className="size-3" /></Button>
+                <Button onClick={() => onOpenProject(p)} size="sm" variant="ghost" className="h-7 px-2 text-[11px] gap-1">Open <ArrowRight className="size-3" /></Button>
               </div>
             </div>
           ))}

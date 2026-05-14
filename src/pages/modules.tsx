@@ -2,6 +2,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { PageHeader, KpiCard, SectionCard, StatusPill, MiniProgress, Tag } from "@/components/primitives";
+import { downloadPDF, downloadPPTX, downloadXLSX, emailReport, type ReportPayload } from "@/lib/exports";
+import { useToast } from "@/hooks/use-toast";
 import {
   demands, projects, vendors, risks, budgetByPortfolio, valueRealization,
   squadCapacity, milestones, integrations, auditLog, sprintBoard, strategicInitiatives,
@@ -19,7 +21,9 @@ import {
 
 /* ============================ DEMAND INTAKE ============================ */
 export function DemandPage({ onOpenAI }: { onOpenAI: () => void }) {
+  const { toast } = useToast();
   const stages = ["Intake", "Discovery", "Prioritization", "Approval"] as const;
+  const onNewDemand = () => toast({ title: "New demand", description: "Intake form would open here." });
   return (
     <div className="space-y-6">
       <PageHeader
@@ -29,7 +33,7 @@ export function DemandPage({ onOpenAI }: { onOpenAI: () => void }) {
         actions={
           <>
             <Button onClick={onOpenAI} variant="outline" className="h-9 rounded-xl gap-1.5"><Sparkle className="size-3.5" /> Score with AI</Button>
-            <Button className="h-9 rounded-xl gap-1.5 bg-[#C66E4E] hover:bg-[#b15f43] text-white"><Plus className="size-3.5" /> New demand</Button>
+            <Button onClick={onNewDemand} className="h-9 rounded-xl gap-1.5 bg-[#C66E4E] hover:bg-[#b15f43] text-white"><Plus className="size-3.5" /> New demand</Button>
           </>
         }
       />
@@ -97,13 +101,22 @@ export function DemandPage({ onOpenAI }: { onOpenAI: () => void }) {
 
 /* ============================ BUDGET ============================ */
 export function BudgetPage() {
+  const { toast } = useToast();
+  const onExportBudget = () => {
+    const rows = projects.slice(0, 6).map(p => ({
+      Project: p.name, ID: p.id, Plan_SAR_M: 12.4, Actual_SAR_M: +(12.4 * p.budgetUsed / 100).toFixed(1),
+      Utilization_Pct: p.budgetUsed, Status: p.status, Owner: p.owner,
+    }));
+    downloadXLSX(rows, "budget-burn-down");
+    toast({ title: "Excel ready", description: "Budget burn-down exported." });
+  };
   return (
     <div className="space-y-6">
       <PageHeader
         eyebrow="Budget Management"
         title="Budget vs Actuals — 134M SAR portfolio"
         subtitle="Plan, commitment and actuals tracked from SAP S/4 Finance with nightly reconciliation."
-        actions={<Button variant="outline" className="h-9 rounded-xl gap-1.5"><Download className="size-3.5" /> Export</Button>}
+        actions={<Button onClick={onExportBudget} variant="outline" className="h-9 rounded-xl gap-1.5"><Download className="size-3.5" /> Export</Button>}
       />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
@@ -166,13 +179,36 @@ export function BudgetPage() {
 
 /* ============================ VENDORS ============================ */
 export function VendorsPage() {
+  const { toast } = useToast();
+  const onFilter = () => toast({ title: "Filter", description: "Vendor filter panel would open here." });
+  const onOpenScorecard = (v: typeof vendors[number]) => {
+    const payload: ReportPayload = {
+      title: `Vendor Scorecard — ${v.name}`,
+      subtitle: `${v.category} · ${v.id} · ${v.projects} projects\nContract ${v.contract} · Status ${v.status}`,
+      kpis: [
+        { label: "Performance", value: `${v.perf}/100`, hint: v.perf < 75 ? "Underperforming" : v.perf < 85 ? "Watch" : "On track" },
+        { label: "SLA",         value: `${v.sla}%`,     hint: v.sla < 97 ? "Below target" : "Within target" },
+        { label: "Utilization", value: `${v.utilization}%`, hint: "Contract burn" },
+        { label: "Projects",    value: String(v.projects),  hint: "Active engagements" },
+      ],
+      sections: [
+        { heading: "Performance summary", bullets: [
+          `Overall performance score ${v.perf}/100`,
+          `SLA adherence ${v.sla}% across active deliverables`,
+          `Contract utilization at ${v.utilization}% — ${v.contract}`,
+        ]},
+      ],
+    };
+    downloadPDF(payload, `vendor-${v.id.toLowerCase()}-scorecard`);
+    toast({ title: "Scorecard exported", description: `${v.name} scorecard PDF downloaded.` });
+  };
   return (
     <div className="space-y-6">
       <PageHeader
         eyebrow="Vendor Management"
         title="Vendor performance & contract utilization"
         subtitle="Live vendor scorecard across performance, SLA adherence, deliverables and contract burn."
-        actions={<Button variant="outline" className="h-9 rounded-xl gap-1.5"><Filter className="size-3.5" /> Filter</Button>}
+        actions={<Button onClick={onFilter} variant="outline" className="h-9 rounded-xl gap-1.5"><Filter className="size-3.5" /> Filter</Button>}
       />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
@@ -218,7 +254,7 @@ export function VendorsPage() {
             </div>
             <div className="mt-3 flex items-center justify-between text-[11.5px]">
               <span className="text-muted-foreground">Utilization · <span className="font-semibold tabular-nums text-foreground">{v.utilization}%</span></span>
-              <Button variant="ghost" size="sm" className="h-7 px-2 text-[11px] gap-1">Open scorecard <ArrowRight className="size-3" /></Button>
+              <Button onClick={() => onOpenScorecard(v)} variant="ghost" size="sm" className="h-7 px-2 text-[11px] gap-1">Open scorecard <ArrowRight className="size-3" /></Button>
             </div>
           </div>
         ))}
@@ -229,8 +265,17 @@ export function VendorsPage() {
 
 /* ============================ RISKS ============================ */
 export function RisksPage() {
+  const { toast } = useToast();
   const matrix = ["Critical", "High", "Medium", "Low"];
   const likes = ["Low", "Medium", "High"];
+  const onExportRegister = () => {
+    const rows = risks.map(r => ({
+      ID: r.id, Title: r.title, Project: r.project, Severity: r.severity,
+      Likelihood: r.likelihood, Owner: r.owner, ETA: r.eta,
+    }));
+    downloadXLSX(rows, "risk-register");
+    toast({ title: "Excel ready", description: "Risk register exported." });
+  };
 
   return (
     <div className="space-y-6">
@@ -238,7 +283,7 @@ export function RisksPage() {
         eyebrow="Risk, Issue & Dependency Register"
         title="Active risks & escalations"
         subtitle="Aggregated from ServiceNow GRC, Jira and project records. Heatmap by severity × likelihood."
-        actions={<Button variant="outline" className="h-9 rounded-xl gap-1.5"><Download className="size-3.5" /> Export register</Button>}
+        actions={<Button onClick={onExportRegister} variant="outline" className="h-9 rounded-xl gap-1.5"><Download className="size-3.5" /> Export register</Button>}
       />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
@@ -382,6 +427,37 @@ export function ValuePage() {
 
 /* ============================ REPORTING ============================ */
 export function ReportingPage({ onOpenAI }: { onOpenAI: () => void }) {
+  const { toast } = useToast();
+  const onNewPack = () => toast({ title: "New pack", description: "Report pack template selector would open here." });
+
+  const buildPayload = (title: string, desc: string): ReportPayload => ({
+    title, subtitle: desc, owner: "D&I Portfolio Office",
+    kpis: [
+      { label: "Active projects",  value: "47",       hint: "+6 QoQ" },
+      { label: "Value YTD",        value: "142M SAR", hint: "+18M MoM" },
+      { label: "Budget utilized",  value: "68%",      hint: "+4 pts" },
+      { label: "On-time delivery", value: "84%",      hint: "+2 pts" },
+    ],
+    sections: [
+      { heading: "Overview",       bullets: [desc, "Auto-generated from live portfolio data", "Brand-styled, citation-grounded"] },
+      { heading: "Top exposures",  bullets: ["Regulatory deadline shift (PRJ-1045)", "Snowflake cost overrun", "Local SI Partner underperforming"] },
+      { heading: "Recommendations", bullets: ["Re-balance ML Platform squad", "Accelerate UAT for Risk Predictive Models", "Renegotiate SI Partner SOW"] },
+    ],
+  });
+
+  const openPack = (p: { title: string; desc: string; format: string }) => {
+    const payload = buildPayload(p.title, p.desc);
+    const base = p.title.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    if (p.format === "PowerPoint") { downloadPPTX(payload, base); toast({ title: "PowerPoint ready", description: `${p.title} downloaded.` }); }
+    else if (p.format === "Excel")  { downloadXLSX(vendors.map(v => ({ Vendor: v.name, ID: v.id, Category: v.category, Contract: v.contract, Performance: v.perf, SLA: `${v.sla}%`, Utilization: `${v.utilization}%`, Status: v.status })), base); toast({ title: "Excel ready", description: `${p.title} downloaded.` }); }
+    else                            { downloadPDF(payload,  base); toast({ title: "PDF ready",        description: `${p.title} downloaded.` }); }
+  };
+  const downloadPack = openPack;
+  const emailPack = (p: { title: string; desc: string }) => {
+    emailReport(`${p.title} — D&I Portfolio`, `${p.desc}\n\nReport pack from the D&I Portfolio Portal.`);
+    toast({ title: "Email draft opened", description: "Your mail client will open." });
+  };
+
   const packs = [
     { title: "Executive Pack · May 2026",     desc: "Portfolio health, value, risks, vendors · auto-generated", date: "2026-05-14", format: "PowerPoint" },
     { title: "ExCo Risk Briefing",            desc: "Top 5 risks, mitigation, escalations · regulatory deep-dive", date: "2026-05-12", format: "PDF" },
@@ -400,7 +476,7 @@ export function ReportingPage({ onOpenAI }: { onOpenAI: () => void }) {
         actions={
           <>
             <Button onClick={onOpenAI} variant="outline" className="h-9 rounded-xl gap-1.5"><Sparkle className="size-3.5" /> Generate with AI</Button>
-            <Button className="h-9 rounded-xl gap-1.5 bg-primary hover:bg-primary/90"><Plus className="size-3.5" /> New pack</Button>
+            <Button onClick={onNewPack} className="h-9 rounded-xl gap-1.5 bg-primary hover:bg-primary/90"><Plus className="size-3.5" /> New pack</Button>
           </>
         }
       />
@@ -418,9 +494,9 @@ export function ReportingPage({ onOpenAI }: { onOpenAI: () => void }) {
               <div className="flex items-center justify-between mt-4 pt-3 border-t border-border/60">
                 <div className="text-[11px] text-muted-foreground tabular-nums">{p.date}</div>
                 <div className="flex gap-1">
-                  <Button variant="ghost" size="icon" className="size-7"><Presentation className="size-3.5" /></Button>
-                  <Button variant="ghost" size="icon" className="size-7"><FileDown className="size-3.5" /></Button>
-                  <Button variant="ghost" size="icon" className="size-7"><Mail className="size-3.5" /></Button>
+                  <Button onClick={() => openPack(p)}     variant="ghost" size="icon" className="size-7" aria-label="Open pack"><Presentation className="size-3.5" /></Button>
+                  <Button onClick={() => downloadPack(p)} variant="ghost" size="icon" className="size-7" aria-label="Download pack"><FileDown className="size-3.5" /></Button>
+                  <Button onClick={() => emailPack(p)}    variant="ghost" size="icon" className="size-7" aria-label="Email pack"><Mail className="size-3.5" /></Button>
                 </div>
               </div>
             </div>
@@ -716,6 +792,8 @@ export function SprintPage() {
 
 /* ============================ APPROVALS ============================ */
 export function ApprovalsPage() {
+  const { toast } = useToast();
+  const onAct = (action: string, id: string) => toast({ title: `Demand ${action}`, description: `${id} ${action}.` });
   const pending = demands.filter(d => d.stage === "Approval");
   return (
     <div className="space-y-6">
@@ -730,9 +808,9 @@ export function ApprovalsPage() {
             <div className="font-display text-[15px] font-semibold leading-snug">{d.title}</div>
             <div className="text-[11.5px] text-muted-foreground mt-1.5">{d.requester} · value {d.value.toFixed(1)} · effort {d.effort}</div>
             <div className="grid grid-cols-3 gap-2 mt-4">
-              <Button className="h-9 text-[12px] bg-ok/15 text-ok hover:bg-ok/25 border-0 gap-1"><CheckCircle2 className="size-3.5" /> Approve</Button>
-              <Button variant="outline" className="h-9 text-[12px] gap-1"><Clock className="size-3.5" /> Defer</Button>
-              <Button variant="ghost" className="h-9 text-[12px] text-bad hover:bg-bad/10 gap-1"><XCircle className="size-3.5" /> Reject</Button>
+              <Button onClick={() => onAct("approved", d.id)} className="h-9 text-[12px] bg-ok/15 text-ok hover:bg-ok/25 border-0 gap-1"><CheckCircle2 className="size-3.5" /> Approve</Button>
+              <Button onClick={() => onAct("deferred", d.id)} variant="outline" className="h-9 text-[12px] gap-1"><Clock className="size-3.5" /> Defer</Button>
+              <Button onClick={() => onAct("rejected", d.id)} variant="ghost" className="h-9 text-[12px] text-bad hover:bg-bad/10 gap-1"><XCircle className="size-3.5" /> Reject</Button>
             </div>
           </div>
         ))}

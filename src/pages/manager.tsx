@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader, KpiCard, SectionCard, StatusPill, MiniProgress, Tag } from "@/components/primitives";
 import { demands, projects, squadCapacity, milestones, vendors, risks } from "@/lib/mock-data";
+import { useToast } from "@/hooks/use-toast";
 import {
   BarChart, Bar, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, LineChart, Line, Legend,
 } from "recharts";
@@ -10,6 +11,10 @@ import { ArrowRight, Filter, Plus, Sparkle, CheckCircle2, XCircle, Clock, AlertT
 const STAGES = ["Intake", "Discovery", "Prioritization", "Approval"] as const;
 
 export default function ManagerView({ onOpenAI }: { onOpenAI: () => void }) {
+  const { toast } = useToast();
+  const onApprove = (id: string) => toast({ title: "Demand approved", description: `${id} moved to roadmap intake.` });
+  const onDefer   = (id: string) => toast({ title: "Demand deferred", description: `${id} pushed to next committee.` });
+  const onReject  = (id: string) => toast({ title: "Demand rejected", description: `${id} returned to requester with notes.` });
   const stageCounts = STAGES.map(s => ({
     stage: s, count: demands.filter(d => d.stage === s).length,
   }));
@@ -117,13 +122,13 @@ export default function ManagerView({ onOpenAI }: { onOpenAI: () => void }) {
                 <div className="text-[13px] font-semibold leading-snug">{d.title}</div>
                 <div className="text-[11px] text-muted-foreground mt-1">{d.requester} · value score {d.value.toFixed(1)} · effort {d.effort}</div>
                 <div className="flex gap-2 mt-2.5">
-                  <Button size="sm" className="h-7 text-[11px] flex-1 bg-ok/15 text-ok hover:bg-ok/25 border-0">
+                  <Button onClick={() => onApprove(d.id)} size="sm" className="h-7 text-[11px] flex-1 bg-ok/15 text-ok hover:bg-ok/25 border-0">
                     <CheckCircle2 className="size-3 mr-1" /> Approve
                   </Button>
-                  <Button size="sm" variant="ghost" className="h-7 text-[11px] flex-1">
+                  <Button onClick={() => onDefer(d.id)} size="sm" variant="ghost" className="h-7 text-[11px] flex-1">
                     <Clock className="size-3 mr-1" /> Defer
                   </Button>
-                  <Button size="sm" variant="ghost" className="h-7 text-[11px] flex-1 text-bad hover:bg-bad/10">
+                  <Button onClick={() => onReject(d.id)} size="sm" variant="ghost" className="h-7 text-[11px] flex-1 text-bad hover:bg-bad/10">
                     <XCircle className="size-3 mr-1" /> Reject
                   </Button>
                 </div>

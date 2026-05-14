@@ -5,9 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useRole } from "@/lib/role-context";
 import {
-  Sparkle, FileDown, Mail, Presentation, Send, ChevronRight,
+  Sparkle, FileDown, Mail, Presentation, Send, ChevronRight, ArrowLeft,
   AlertTriangle, Building2, Wallet, Users, FolderKanban, FileBarChart2, BookOpen
 } from "lucide-react";
+import { downloadPDF, downloadPPTX, emailReport, type ReportPayload } from "@/lib/exports";
+import { useToast } from "@/hooks/use-toast";
 
 type Msg =
   | { kind: "user"; text: string }
@@ -177,6 +179,7 @@ function SourceIcon({ t }: { t: SourceCard["type"] }) {
 
 export function AICopilot({ open, onOpenChange }: { open: boolean; onOpenChange: (b: boolean) => void }) {
   const { role, user } = useRole();
+  const { toast } = useToast();
   const [msgs, setMsgs] = useState<Msg[]>([
     {
       kind: "ai",
@@ -199,6 +202,35 @@ export function AICopilot({ open, onOpenChange }: { open: boolean; onOpenChange:
     setInput("");
   }
 
+  function buildTranscript(): ReportPayload {
+    const sections = msgs
+      .filter((m): m is Extract<Msg, { kind: "ai" }> => m.kind === "ai")
+      .map((m, idx) => ({
+        heading: m.tag ? `${idx + 1}. ${m.tag}` : `Insight ${idx + 1}`,
+        bullets: [
+          m.text.replace(/\*\*(.+?)\*\*/g, "$1"),
+          ...(m.cards?.map(c => `${c.title} — ${c.meta} · Source: ${c.source}`) ?? []),
+        ],
+      }));
+    return {
+      title: "D&I Copilot — Conversation Transcript",
+      subtitle: `Role · ${role} · ${new Date().toLocaleDateString()}`,
+      owner: user.name,
+      sections: sections.length ? sections : [{ heading: "No insights yet", bullets: ["Ask the Copilot a question first."] }],
+    };
+  }
+
+  const onExportPPT = () => { downloadPPTX(buildTranscript(), "copilot-transcript"); toast({ title: "PowerPoint ready", description: "Copilot transcript downloaded." }); };
+  const onExportPDF = () => { downloadPDF(buildTranscript(),  "copilot-transcript"); toast({ title: "PDF ready",        description: "Copilot transcript downloaded." }); };
+  const onExportMail = () => {
+    const body = msgs
+      .filter((m): m is Extract<Msg, { kind: "ai" }> => m.kind === "ai")
+      .map(m => `${m.tag ?? "Insight"}\n${m.text.replace(/\*\*(.+?)\*\*/g, "$1")}`)
+      .join("\n\n");
+    emailReport("D&I Copilot — Conversation Summary", body || "No insights yet.");
+    toast({ title: "Email draft opened", description: "Your mail client will open with the summary." });
+  };
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
@@ -208,16 +240,24 @@ export function AICopilot({ open, onOpenChange }: { open: boolean; onOpenChange:
         {/* Header */}
         <SheetHeader className="px-5 pt-5 pb-4 border-b border-border bg-gradient-to-br from-[#0C2341] to-[#0C2341]/95 text-white">
           <SheetTitle className="flex items-center gap-2.5 text-white">
-            <div className="size-9 rounded-xl bg-gradient-to-br from-[#8B84D7] to-[#FFA38B] grid place-items-center shadow-soft">
+            <button
+              onClick={() => onOpenChange(false)}
+              data-testid="button-copilot-back"
+              aria-label="Back to dashboard"
+              className="size-9 rounded-xl bg-white/10 hover:bg-white/20 grid place-items-center transition-colors text-white shrink-0"
+            >
+              <ArrowLeft className="size-4" />
+            </button>
+            <div className="size-9 rounded-xl bg-gradient-to-br from-[#8B84D7] to-[#FFA38B] grid place-items-center shadow-soft shrink-0">
               <Sparkle className="size-4 text-[#0C2341]" />
             </div>
-            <div className="flex-1 text-left">
+            <div className="flex-1 text-left min-w-0">
               <div className="font-display text-[16px] font-semibold leading-tight">D&amp;I Copilot</div>
-              <div className="text-[11px] font-normal text-white/60 leading-tight mt-0.5">
+              <div className="text-[11px] font-normal text-white/60 leading-tight mt-0.5 truncate">
                 Role-aware · grounded across Jira, ServiceNow, SAP, Power BI
               </div>
             </div>
-            <Badge className="bg-[#FFA38B] text-[#623B2A] border-0 hover:bg-[#FFA38B] font-medium">Beta</Badge>
+            <Badge className="bg-[#FFA38B] text-[#623B2A] border-0 hover:bg-[#FFA38B] font-medium shrink-0">Beta</Badge>
           </SheetTitle>
         </SheetHeader>
 
@@ -285,13 +325,13 @@ export function AICopilot({ open, onOpenChange }: { open: boolean; onOpenChange:
         {/* Export bar */}
         <div className="border-t border-border bg-card px-5 py-2.5 flex items-center gap-2">
           <span className="text-[10.5px] uppercase tracking-[0.18em] text-muted-foreground mr-1">Export</span>
-          <Button size="sm" variant="ghost" className="h-7 px-2 text-[11.5px] gap-1" data-testid="copilot-export-pptx">
+          <Button onClick={onExportPPT} size="sm" variant="ghost" className="h-7 px-2 text-[11.5px] gap-1" data-testid="copilot-export-pptx">
             <Presentation className="size-3.5" /> PowerPoint
           </Button>
-          <Button size="sm" variant="ghost" className="h-7 px-2 text-[11.5px] gap-1" data-testid="copilot-export-pdf">
+          <Button onClick={onExportPDF} size="sm" variant="ghost" className="h-7 px-2 text-[11.5px] gap-1" data-testid="copilot-export-pdf">
             <FileDown className="size-3.5" /> PDF
           </Button>
-          <Button size="sm" variant="ghost" className="h-7 px-2 text-[11.5px] gap-1" data-testid="copilot-export-email">
+          <Button onClick={onExportMail} size="sm" variant="ghost" className="h-7 px-2 text-[11.5px] gap-1" data-testid="copilot-export-email">
             <Mail className="size-3.5" /> Email draft
           </Button>
         </div>
