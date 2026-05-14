@@ -15,11 +15,15 @@ import {
 } from "lucide-react";
 import { downloadPDF, downloadPPTX, downloadXLSX, type ReportPayload } from "@/lib/exports";
 import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 
 export default function ExecutiveView({ onOpenAI }: { onOpenAI: () => void }) {
   const accentOrder: Array<"primary" | "coral" | "orange" | "purple2" | "navy" | "primary"> =
     ["primary", "purple2", "coral", "orange", "navy", "primary"];
   const { toast } = useToast();
+  const [, navigate] = useLocation();
+  const go = (path: string) => () => navigate(path);
+  const showItem = (title: string, desc: string) => () => toast({ title, description: desc });
 
   const buildExecPack = (): ReportPayload => ({
     title: "Executive Pack · May 2026",
@@ -231,11 +235,15 @@ export default function ExecutiveView({ onOpenAI }: { onOpenAI: () => void }) {
           className="lg:col-span-2"
           title="Strategic Initiatives"
           subtitle="C-suite portfolio · status, owner, Vision 2030 mapping"
-          actions={<Button variant="ghost" size="sm" className="h-8 text-[12px] gap-1">View all <ArrowRight className="size-3.5" /></Button>}
+          actions={<Button onClick={go("/portfolio")} variant="ghost" size="sm" className="h-8 text-[12px] gap-1">View all <ArrowRight className="size-3.5" /></Button>}
         >
           <div className="space-y-2.5">
             {strategicInitiatives.map(i => (
-              <div key={i.id} className="grid grid-cols-12 items-center gap-3 px-3 py-3 rounded-xl bg-secondary/40 hover-elevate transition-all">
+              <button
+                key={i.id}
+                onClick={showItem(`${i.id} · ${i.name}`, `${i.status} · ${i.progress}% complete · owner ${i.owner}`)}
+                className="w-full text-left grid grid-cols-12 items-center gap-3 px-3 py-3 rounded-xl bg-secondary/40 hover-elevate transition-all cursor-pointer"
+              >
                 <div className="col-span-12 md:col-span-5">
                   <div className="flex items-center gap-2">
                     <span className="text-[10.5px] font-mono text-muted-foreground">{i.id}</span>
@@ -257,7 +265,7 @@ export default function ExecutiveView({ onOpenAI }: { onOpenAI: () => void }) {
                 <div className="col-span-5 md:col-span-3 flex md:justify-end">
                   <Tag tone="purple">{i.vision.replace("Vision 2030 · ", "")}</Tag>
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         </SectionCard>
@@ -329,14 +337,18 @@ export default function ExecutiveView({ onOpenAI }: { onOpenAI: () => void }) {
           title="Top Risks & Escalations"
           subtitle="Critical & High exposure · this month"
           actions={
-            <Button variant="ghost" size="sm" className="h-8 text-[12px] gap-1">
+            <Button onClick={go("/risks")} variant="ghost" size="sm" className="h-8 text-[12px] gap-1">
               <AlertTriangle className="size-3.5" /> Risk register
             </Button>
           }
         >
           <div className="space-y-2">
             {risks.slice(0, 4).map(r => (
-              <div key={r.id} className="flex items-start gap-3 px-3 py-2.5 rounded-xl bg-secondary/40 hover-elevate transition-all">
+              <button
+                key={r.id}
+                onClick={showItem(`${r.id} · ${r.title}`, `${r.severity} · ${r.project} · owner ${r.owner} · ETA ${r.eta}`)}
+                className="w-full text-left flex items-start gap-3 px-3 py-2.5 rounded-xl bg-secondary/40 hover-elevate transition-all cursor-pointer"
+              >
                 <div className="size-9 rounded-lg bg-bad/12 text-bad grid place-items-center shrink-0">
                   <AlertTriangle className="size-4" />
                 </div>
@@ -349,7 +361,7 @@ export default function ExecutiveView({ onOpenAI }: { onOpenAI: () => void }) {
                   <div className="text-[13px] font-medium mt-1 leading-snug">{r.title}</div>
                   <div className="text-[11px] text-muted-foreground mt-1">Owner · {r.owner} · ETA {r.eta}</div>
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         </SectionCard>
@@ -357,11 +369,15 @@ export default function ExecutiveView({ onOpenAI }: { onOpenAI: () => void }) {
         <SectionCard
           title="Vendor Performance"
           subtitle="Performance score · contract utilization · SLA"
-          actions={<Button variant="ghost" size="sm" className="h-8 text-[12px] gap-1">All vendors <ArrowRight className="size-3.5" /></Button>}
+          actions={<Button onClick={go("/vendors")} variant="ghost" size="sm" className="h-8 text-[12px] gap-1">All vendors <ArrowRight className="size-3.5" /></Button>}
         >
           <div className="space-y-2">
             {vendors.slice(0, 4).map(v => (
-              <div key={v.id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-secondary/40 hover-elevate transition-all">
+              <button
+                key={v.id}
+                onClick={showItem(v.name, `${v.category} · contract ${v.contract} · perf ${v.perf}/100 · SLA ${v.sla}% · ${v.status}`)}
+                className="w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-xl bg-secondary/40 hover-elevate transition-all cursor-pointer"
+              >
                 <div className="size-10 rounded-xl gradient-purple-soft grid place-items-center text-[12px] font-semibold text-[#3a3585] shrink-0">
                   {v.name.split(" ").map(p => p[0]).slice(0, 2).join("")}
                 </div>
@@ -381,7 +397,7 @@ export default function ExecutiveView({ onOpenAI }: { onOpenAI: () => void }) {
                     <span className="text-[11.5px] font-semibold tabular-nums">{v.perf}</span>
                   </div>
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         </SectionCard>
@@ -391,7 +407,7 @@ export default function ExecutiveView({ onOpenAI }: { onOpenAI: () => void }) {
       <SectionCard
         title="Delivery Snapshot — Top Projects"
         subtitle="Drill into the projects driving this month's outcomes"
-        actions={<Button variant="ghost" size="sm" className="h-8 text-[12px] gap-1">Open portfolio <ArrowRight className="size-3.5" /></Button>}
+        actions={<Button onClick={go("/portfolio")} variant="ghost" size="sm" className="h-8 text-[12px] gap-1">Open portfolio <ArrowRight className="size-3.5" /></Button>}
       >
         <div className="overflow-x-auto -mx-5 px-5">
           <table className="w-full text-[12.5px]">
@@ -408,7 +424,11 @@ export default function ExecutiveView({ onOpenAI }: { onOpenAI: () => void }) {
             </thead>
             <tbody className="divide-y divide-border/60">
               {projects.slice(0, 6).map(p => (
-                <tr key={p.id} className="hover:bg-secondary/40 transition-colors">
+                <tr
+                  key={p.id}
+                  onClick={showItem(p.name, `${p.id} · ${p.status} · ${p.progress}% complete · vendor ${p.vendor} · owner ${p.owner}`)}
+                  className="hover:bg-secondary/40 transition-colors cursor-pointer"
+                >
                   <td className="py-3 pr-3">
                     <div className="font-mono text-[10.5px] text-muted-foreground">{p.id}</div>
                     <div className="font-semibold text-[13px]">{p.name}</div>

@@ -2,6 +2,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader, KpiCard, SectionCard, StatusPill, MiniProgress, Tag } from "@/components/primitives";
 import { sprintBoard, squadCapacity } from "@/lib/mock-data";
+import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
 } from "recharts";
@@ -41,9 +43,9 @@ function ColumnTitle({ icon: Icon, label, count, tone }: any) {
   );
 }
 
-function Card({ id, title, assignee, points, type }: any) {
+function Card({ id, title, assignee, points, type, onClick }: any) {
   return (
-    <div className="bg-card rounded-xl border border-card-border p-3 shadow-soft hover-elevate transition-all cursor-pointer">
+    <button onClick={onClick} className="w-full text-left bg-card rounded-xl border border-card-border p-3 shadow-soft hover-elevate transition-all cursor-pointer">
       <div className="flex items-center gap-2 mb-1.5">
         <span className="text-[10px] font-mono text-muted-foreground">{id}</span>
         <Tag tone={type === "Task" ? "neutral" : "purple"}>{type}</Tag>
@@ -58,11 +60,15 @@ function Card({ id, title, assignee, points, type }: any) {
         </div>
         <span className="text-[10.5px] font-semibold tabular-nums px-1.5 py-0.5 rounded-md bg-muted">{points}sp</span>
       </div>
-    </div>
+    </button>
   );
 }
 
 export default function TechView({ onOpenAI }: { onOpenAI: () => void }) {
+  const { toast } = useToast();
+  const [, navigate] = useLocation();
+  const showItem = (title: string, desc: string) => () => toast({ title, description: desc });
+  const cardClick = (c: any) => showItem(`${c.id} · ${c.title}`, `${c.type} · ${c.assignee} · ${c.points}sp`);
   return (
     <div className="space-y-7">
       <PageHeader
@@ -71,9 +77,9 @@ export default function TechView({ onOpenAI }: { onOpenAI: () => void }) {
         subtitle="Sprint progress, Jira tasks, dependencies, data readiness, model & deployment status."
         actions={
           <>
-            <Button variant="outline" className="h-9 rounded-xl gap-1.5"><GitBranch className="size-3.5" /> Branch</Button>
+            <Button onClick={() => toast({ title: "Branch", description: "Opening branch selector (mock)." })} variant="outline" className="h-9 rounded-xl gap-1.5"><GitBranch className="size-3.5" /> Branch</Button>
             <Button onClick={onOpenAI} className="h-9 rounded-xl gap-1.5"><Sparkle className="size-3.5" /> Ask Copilot</Button>
-            <Button className="h-9 rounded-xl gap-1.5 bg-[#0C2341] hover:bg-[#15355e] text-white"><Rocket className="size-3.5" /> Deploy</Button>
+            <Button onClick={() => toast({ title: "Deploy", description: "Deployment pipeline triggered (mock)." })} className="h-9 rounded-xl gap-1.5 bg-[#0C2341] hover:bg-[#15355e] text-white"><Rocket className="size-3.5" /> Deploy</Button>
           </>
         }
       />
@@ -117,11 +123,11 @@ export default function TechView({ onOpenAI }: { onOpenAI: () => void }) {
               { id: "DI-2061", t: "Vector store quota uplift request",    st: "To Do" },
               { id: "DI-2070", t: "ADR-0037 · Embedding model selection", st: "In Progress" },
             ].map(a => (
-              <div key={a.id} className="flex items-center gap-3 px-3 py-2 rounded-xl bg-secondary/40 hover-elevate transition-all">
+              <button key={a.id} onClick={showItem(`${a.id} · ${a.t}`, `Status: ${a.st}`)} className="w-full text-left flex items-center gap-3 px-3 py-2 rounded-xl bg-secondary/40 hover-elevate transition-all cursor-pointer">
                 <span className="text-[10px] font-mono text-muted-foreground shrink-0">{a.id}</span>
                 <span className="text-[12px] font-medium flex-1 truncate">{a.t}</span>
                 <StatusPill>{a.st === "In Progress" ? "At Risk" : a.st === "In Review" ? "On Track" : "On Hold"}</StatusPill>
-              </div>
+              </button>
             ))}
           </div>
         </SectionCard>
@@ -136,19 +142,19 @@ export default function TechView({ onOpenAI }: { onOpenAI: () => void }) {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <div>
             <ColumnTitle icon={FileText}      label="To Do"        count={sprintBoard.todo.length}       tone="bg-muted text-muted-foreground" />
-            <div className="space-y-2">{sprintBoard.todo.map(c => <Card key={c.id} {...c} />)}</div>
+            <div className="space-y-2">{sprintBoard.todo.map(c => <Card key={c.id} {...c} onClick={cardClick(c)} />)}</div>
           </div>
           <div>
             <ColumnTitle icon={Cpu}           label="In Progress"  count={sprintBoard.in_progress.length} tone="bg-primary/15 text-primary" />
-            <div className="space-y-2">{sprintBoard.in_progress.map(c => <Card key={c.id} {...c} />)}</div>
+            <div className="space-y-2">{sprintBoard.in_progress.map(c => <Card key={c.id} {...c} onClick={cardClick(c)} />)}</div>
           </div>
           <div>
             <ColumnTitle icon={GitMerge}      label="In Review"    count={sprintBoard.review.length}     tone="bg-[#FFA38B]/30 text-[#623B2A] dark:text-[#FFA38B]" />
-            <div className="space-y-2">{sprintBoard.review.map(c => <Card key={c.id} {...c} />)}</div>
+            <div className="space-y-2">{sprintBoard.review.map(c => <Card key={c.id} {...c} onClick={cardClick(c)} />)}</div>
           </div>
           <div>
             <ColumnTitle icon={CheckCircle2}  label="Done"         count={sprintBoard.done.length}       tone="bg-ok/15 text-ok" />
-            <div className="space-y-2">{sprintBoard.done.map(c => <Card key={c.id} {...c} />)}</div>
+            <div className="space-y-2">{sprintBoard.done.map(c => <Card key={c.id} {...c} onClick={cardClick(c)} />)}</div>
           </div>
         </div>
       </SectionCard>
@@ -158,7 +164,7 @@ export default function TechView({ onOpenAI }: { onOpenAI: () => void }) {
         <SectionCard title="Data Readiness" subtitle="Source readiness & quality scores">
           <div className="space-y-2.5">
             {dataReadiness.map(d => (
-              <div key={d.source} className="grid grid-cols-12 items-center gap-3 px-3 py-2.5 rounded-xl bg-secondary/40">
+              <button key={d.source} onClick={showItem(d.source, `${d.status} · quality ${d.quality}%`)} className="w-full text-left grid grid-cols-12 items-center gap-3 px-3 py-2.5 rounded-xl bg-secondary/40 hover-elevate transition-all cursor-pointer">
                 <div className="col-span-5 flex items-center gap-2">
                   <Database className="size-3.5 text-muted-foreground" />
                   <span className="text-[12.5px] font-medium">{d.source}</span>
@@ -172,7 +178,7 @@ export default function TechView({ onOpenAI }: { onOpenAI: () => void }) {
                   </div>
                   <span className="tabular-nums text-[11.5px] font-semibold">{d.quality}</span>
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         </SectionCard>
@@ -180,7 +186,7 @@ export default function TechView({ onOpenAI }: { onOpenAI: () => void }) {
         <SectionCard title="Technical Dependencies" subtitle="Cross-team blockers and approvals">
           <div className="space-y-2">
             {techDeps.map(d => (
-              <div key={d.name} className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-secondary/40">
+              <button key={d.name} onClick={showItem(d.name, `${d.team} · ${d.status} · ETA ${d.eta}`)} className="w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-xl bg-secondary/40 hover-elevate transition-all cursor-pointer">
                 <div className={`size-9 rounded-lg grid place-items-center shrink-0
                   ${d.status === "Blocked" ? "bg-bad/12 text-bad"
                    : d.status === "In Review" ? "bg-warn/14 text-warn"
@@ -194,7 +200,7 @@ export default function TechView({ onOpenAI }: { onOpenAI: () => void }) {
                   <div className="text-[11px] text-muted-foreground mt-0.5">{d.team} · ETA {d.eta}</div>
                 </div>
                 <StatusPill>{d.status === "Blocked" ? "Delayed" : d.status === "In Review" ? "At Risk" : "On Track"}</StatusPill>
-              </div>
+              </button>
             ))}
           </div>
         </SectionCard>
@@ -241,7 +247,7 @@ export default function TechView({ onOpenAI }: { onOpenAI: () => void }) {
           </div>
         </SectionCard>
 
-        <SectionCard title="Documentation Status" subtitle="ADRs · runbooks · tickets" actions={<Button variant="ghost" size="sm" className="h-7 text-[11px] gap-1">Open <ArrowRight className="size-3" /></Button>}>
+        <SectionCard title="Documentation Status" subtitle="ADRs · runbooks · tickets" actions={<Button onClick={() => navigate("/governance")} variant="ghost" size="sm" className="h-7 text-[11px] gap-1">Open <ArrowRight className="size-3" /></Button>}>
           <div className="space-y-2">
             {[
               { id: "ADR-0034", t: "Vector store selection",        s: "Approved" },
@@ -250,12 +256,12 @@ export default function TechView({ onOpenAI }: { onOpenAI: () => void }) {
               { id: "RB-0013",  t: "Model rollback procedure",      s: "Approved" },
               { id: "RB-0014",  t: "Drift detection & alerts",      s: "Draft" },
             ].map(d => (
-              <div key={d.id} className="flex items-center gap-3 px-3 py-2 rounded-xl bg-secondary/40">
+              <button key={d.id} onClick={showItem(`${d.id} · ${d.t}`, `Status: ${d.s}`)} className="w-full text-left flex items-center gap-3 px-3 py-2 rounded-xl bg-secondary/40 hover-elevate transition-all cursor-pointer">
                 <BookOpen className="size-3.5 text-muted-foreground shrink-0" />
                 <span className="text-[10.5px] font-mono text-muted-foreground">{d.id}</span>
                 <span className="text-[12px] font-medium flex-1 truncate">{d.t}</span>
                 <StatusPill>{d.s === "Approved" ? "On Track" : d.s === "In Review" ? "At Risk" : "On Hold"}</StatusPill>
-              </div>
+              </button>
             ))}
           </div>
         </SectionCard>

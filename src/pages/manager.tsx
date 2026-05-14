@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { PageHeader, KpiCard, SectionCard, StatusPill, MiniProgress, Tag } from "@/components/primitives";
 import { demands, projects, squadCapacity, milestones, vendors, risks } from "@/lib/mock-data";
 import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 import {
   BarChart, Bar, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, LineChart, Line, Legend,
 } from "recharts";
@@ -12,9 +13,13 @@ const STAGES = ["Intake", "Discovery", "Prioritization", "Approval"] as const;
 
 export default function ManagerView({ onOpenAI }: { onOpenAI: () => void }) {
   const { toast } = useToast();
+  const [, navigate] = useLocation();
+  const showItem = (title: string, desc: string) => () => toast({ title, description: desc });
   const onApprove = (id: string) => toast({ title: "Demand approved", description: `${id} moved to roadmap intake.` });
   const onDefer   = (id: string) => toast({ title: "Demand deferred", description: `${id} pushed to next committee.` });
   const onReject  = (id: string) => toast({ title: "Demand rejected", description: `${id} returned to requester with notes.` });
+  const onNewDemand = () => toast({ title: "New demand", description: "Opening intake form (mock)." });
+  const onFilter = () => toast({ title: "Filter", description: "Filter panel opened." });
   const stageCounts = STAGES.map(s => ({
     stage: s, count: demands.filter(d => d.stage === s).length,
   }));
@@ -34,9 +39,9 @@ export default function ManagerView({ onOpenAI }: { onOpenAI: () => void }) {
         subtitle="Pipeline, prioritization, capacity, budget vs actuals, risks and approvals across the portfolio."
         actions={
           <>
-            <Button variant="outline" className="h-9 rounded-xl gap-1.5"><Filter className="size-3.5" /> Filter</Button>
+            <Button onClick={onFilter} variant="outline" className="h-9 rounded-xl gap-1.5"><Filter className="size-3.5" /> Filter</Button>
             <Button onClick={onOpenAI} className="h-9 rounded-xl gap-1.5"><Sparkle className="size-3.5" /> Ask Copilot</Button>
-            <Button variant="default" className="h-9 rounded-xl gap-1.5 bg-[#C66E4E] hover:bg-[#b15f43] text-white"><Plus className="size-3.5" /> New demand</Button>
+            <Button onClick={onNewDemand} variant="default" className="h-9 rounded-xl gap-1.5 bg-[#C66E4E] hover:bg-[#b15f43] text-white"><Plus className="size-3.5" /> New demand</Button>
           </>
         }
       />
@@ -87,7 +92,7 @@ export default function ManagerView({ onOpenAI }: { onOpenAI: () => void }) {
               </thead>
               <tbody className="divide-y divide-border/60">
                 {demands.map(d => (
-                  <tr key={d.id} className="hover:bg-secondary/40 transition-colors">
+                  <tr key={d.id} onClick={showItem(`${d.id} · ${d.title}`, `${d.requester} · ${d.priority} · ${d.stage} · value ${d.value.toFixed(1)} · effort ${d.effort}`)} className="hover:bg-secondary/40 transition-colors cursor-pointer">
                     <td className="py-2.5 pr-3 font-mono text-[10.5px] text-muted-foreground">{d.id}</td>
                     <td className="py-2.5 pr-3 font-medium">{d.title}</td>
                     <td className="py-2.5 pr-3 text-muted-foreground">{d.requester}</td>
@@ -150,7 +155,7 @@ export default function ManagerView({ onOpenAI }: { onOpenAI: () => void }) {
               const pct = Math.round((s.allocated / s.capacity) * 100);
               const over = pct > 100;
               return (
-                <div key={s.squad} className="grid grid-cols-12 items-center gap-3 px-3 py-3 rounded-xl bg-secondary/40">
+                <button key={s.squad} onClick={showItem(s.squad, `${s.members} members · ${s.allocated}/${s.capacity} sp · ${pct}% allocated`)} className="w-full text-left grid grid-cols-12 items-center gap-3 px-3 py-3 rounded-xl bg-secondary/40 hover-elevate transition-all cursor-pointer">
                   <div className="col-span-4">
                     <div className="text-[13px] font-semibold">{s.squad}</div>
                     <div className="text-[11px] text-muted-foreground">{s.members} members</div>
@@ -168,7 +173,7 @@ export default function ManagerView({ onOpenAI }: { onOpenAI: () => void }) {
                   <div className="col-span-2 text-right">
                     {over ? <StatusPill>At Risk</StatusPill> : pct < 75 ? <Tag tone="warm">Under-used</Tag> : <StatusPill>On Track</StatusPill>}
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>
@@ -202,14 +207,14 @@ export default function ManagerView({ onOpenAI }: { onOpenAI: () => void }) {
       <SectionCard
         title="Milestones & Deliverables"
         subtitle="Next 90 days · gated by approval & UAT"
-        actions={<Button variant="ghost" size="sm" className="h-8 text-[12px] gap-1">Open roadmap <ArrowRight className="size-3.5" /></Button>}
+        actions={<Button onClick={() => navigate("/milestones")} variant="ghost" size="sm" className="h-8 text-[12px] gap-1">Open roadmap <ArrowRight className="size-3.5" /></Button>}
       >
         <div className="relative pl-6 ml-2 border-l border-dashed border-border space-y-4">
           {milestones.map(m => (
             <div key={m.id} className="relative">
               <div className={`absolute -left-[31px] top-1.5 size-3 rounded-full ring-4 ring-background
                 ${m.status === "Delayed" ? "bg-bad" : m.status === "At Risk" ? "bg-warn" : "bg-primary"}`} />
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 px-3 py-2.5 rounded-xl bg-secondary/40 hover-elevate transition-all">
+              <button onClick={showItem(`${m.id} · ${m.title}`, `${m.project} · ${m.status} · due ${m.date}`)} className="w-full text-left flex flex-col md:flex-row md:items-center justify-between gap-2 px-3 py-2.5 rounded-xl bg-secondary/40 hover-elevate transition-all cursor-pointer">
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-[10.5px] font-mono text-muted-foreground">{m.id}</span>
@@ -219,7 +224,7 @@ export default function ManagerView({ onOpenAI }: { onOpenAI: () => void }) {
                   <div className="text-[13.5px] font-semibold mt-1">{m.title}</div>
                 </div>
                 <div className="text-[12px] tabular-nums text-muted-foreground">{m.date}</div>
-              </div>
+              </button>
             </div>
           ))}
         </div>
@@ -227,10 +232,10 @@ export default function ManagerView({ onOpenAI }: { onOpenAI: () => void }) {
 
       {/* Risks + Vendor SLA */}
       <div className="grid lg:grid-cols-2 gap-4">
-        <SectionCard title="Open Risks & Issues" subtitle="Across managed portfolio">
+        <SectionCard title="Open Risks & Issues" subtitle="Across managed portfolio" actions={<Button onClick={() => navigate("/risks")} variant="ghost" size="sm" className="h-8 text-[12px] gap-1">Risk register <ArrowRight className="size-3.5" /></Button>}>
           <div className="space-y-2">
             {risks.slice(0, 5).map(r => (
-              <div key={r.id} className="flex items-start gap-3 px-3 py-2.5 rounded-xl bg-secondary/40">
+              <button key={r.id} onClick={showItem(`${r.id} · ${r.title}`, `${r.severity} · ${r.project} · owner ${r.owner} · ETA ${r.eta}`)} className="w-full text-left flex items-start gap-3 px-3 py-2.5 rounded-xl bg-secondary/40 hover-elevate transition-all cursor-pointer">
                 <div className="size-9 rounded-lg bg-warn/12 text-warn grid place-items-center shrink-0">
                   <AlertTriangle className="size-4" />
                 </div>
@@ -243,15 +248,15 @@ export default function ManagerView({ onOpenAI }: { onOpenAI: () => void }) {
                   <div className="text-[13px] font-medium mt-1 leading-snug">{r.title}</div>
                   <div className="text-[11px] text-muted-foreground mt-1">Owner · {r.owner} · ETA {r.eta}</div>
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         </SectionCard>
 
-        <SectionCard title="Vendor SLA Tracker" subtitle="Live SLA & deliverables">
+        <SectionCard title="Vendor SLA Tracker" subtitle="Live SLA & deliverables" actions={<Button onClick={() => navigate("/vendors")} variant="ghost" size="sm" className="h-8 text-[12px] gap-1">All vendors <ArrowRight className="size-3.5" /></Button>}>
           <div className="space-y-2.5">
             {vendors.slice(0, 5).map(v => (
-              <div key={v.id} className="px-3 py-2.5 rounded-xl bg-secondary/40">
+              <button key={v.id} onClick={showItem(v.name, `${v.category} · contract ${v.contract} · perf ${v.perf}/100 · SLA ${v.sla}% · ${v.status}`)} className="w-full text-left px-3 py-2.5 rounded-xl bg-secondary/40 hover-elevate transition-all cursor-pointer">
                 <div className="flex items-center justify-between mb-1.5">
                   <div className="flex items-center gap-2">
                     <span className="text-[13px] font-semibold">{v.name}</span>
@@ -273,7 +278,7 @@ export default function ManagerView({ onOpenAI }: { onOpenAI: () => void }) {
                     <div className="font-semibold tabular-nums text-[12.5px]">{v.contract}</div>
                   </div>
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         </SectionCard>

@@ -22,6 +22,7 @@ import {
 /* ============================ DEMAND INTAKE ============================ */
 export function DemandPage({ onOpenAI }: { onOpenAI: () => void }) {
   const { toast } = useToast();
+  const showItem = (title: string, desc: string) => () => toast({ title, description: desc });
   const stages = ["Intake", "Discovery", "Prioritization", "Approval"] as const;
   const onNewDemand = () => toast({ title: "New demand", description: "Intake form would open here." });
   return (
@@ -75,7 +76,7 @@ export function DemandPage({ onOpenAI }: { onOpenAI: () => void }) {
             </thead>
             <tbody className="divide-y divide-border/60">
               {demands.map(d => (
-                <tr key={d.id} className="hover:bg-secondary/40 transition-colors">
+                <tr key={d.id} onClick={showItem(`${d.id} · ${d.title}`, `${d.requester} · ${d.priority} · ${d.stage} · value ${d.value.toFixed(1)} · effort ${d.effort}`)} className="hover:bg-secondary/40 transition-colors cursor-pointer">
                   <td className="py-2.5 pr-3 font-mono text-[10.5px] text-muted-foreground">{d.id}</td>
                   <td className="py-2.5 pr-3 font-medium">{d.title}</td>
                   <td className="py-2.5 pr-3 text-muted-foreground">{d.requester}</td>
@@ -156,7 +157,7 @@ export function BudgetPage() {
             </thead>
             <tbody className="divide-y divide-border/60">
               {projects.slice(0, 6).map(p => (
-                <tr key={p.id} className="hover:bg-secondary/40">
+                <tr key={p.id} onClick={() => toast({ title: `${p.id} · ${p.name}`, description: `Plan 12.4M SAR · actual ${(12.4 * p.budgetUsed / 100).toFixed(1)}M · ${p.budgetUsed}% utilized · ${p.status}` })} className="hover:bg-secondary/40 cursor-pointer">
                   <td className="py-3 pr-3 font-semibold">{p.name} <span className="font-mono text-[10.5px] text-muted-foreground ml-1">{p.id}</span></td>
                   <td className="py-3 pr-3 tabular-nums">12.4M SAR</td>
                   <td className="py-3 pr-3 tabular-nums">{(12.4 * p.budgetUsed / 100).toFixed(1)}M SAR</td>
@@ -266,6 +267,7 @@ export function VendorsPage() {
 /* ============================ RISKS ============================ */
 export function RisksPage() {
   const { toast } = useToast();
+  const showItem = (title: string, desc: string) => () => toast({ title, description: desc });
   const matrix = ["Critical", "High", "Medium", "Low"];
   const likes = ["Low", "Medium", "High"];
   const onExportRegister = () => {
@@ -297,7 +299,7 @@ export function RisksPage() {
         <SectionCard className="lg:col-span-2" title="Risk Register" subtitle="Open risks across portfolio">
           <div className="space-y-2">
             {risks.map(r => (
-              <div key={r.id} className="flex items-start gap-3 px-3 py-2.5 rounded-xl bg-secondary/40 hover-elevate transition-all">
+              <button key={r.id} onClick={showItem(`${r.id} · ${r.title}`, `${r.severity} · ${r.project} · likelihood ${r.likelihood} · owner ${r.owner} · ETA ${r.eta}`)} className="w-full text-left flex items-start gap-3 px-3 py-2.5 rounded-xl bg-secondary/40 hover-elevate transition-all cursor-pointer">
                 <div className={`size-9 rounded-lg grid place-items-center shrink-0
                   ${r.severity === "Critical" ? "bg-bad/14 text-bad"
                   : r.severity === "High" ? "bg-warn/14 text-warn"
@@ -314,7 +316,7 @@ export function RisksPage() {
                   <div className="text-[13px] font-medium mt-1 leading-snug">{r.title}</div>
                   <div className="text-[11px] text-muted-foreground mt-1">Owner · {r.owner} · ETA {r.eta}</div>
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         </SectionCard>
@@ -357,6 +359,8 @@ export function RisksPage() {
 
 /* ============================ VALUE REALIZATION ============================ */
 export function ValuePage() {
+  const { toast } = useToast();
+  const showItem = (title: string, desc: string) => () => toast({ title, description: desc });
   return (
     <div className="space-y-6">
       <PageHeader
@@ -396,7 +400,7 @@ export function ValuePage() {
       <SectionCard title="Initiative Benefits Tracking">
         <div className="space-y-2">
           {strategicInitiatives.map((i, idx) => (
-            <div key={i.id} className="grid grid-cols-12 items-center gap-3 px-3 py-3 rounded-xl bg-secondary/40">
+            <button key={i.id} onClick={showItem(`${i.id} · ${i.name}`, `${i.vision} · planned ${(8 + idx * 4)}M SAR · realized ${Math.round((8 + idx * 4) * i.progress / 100)}M SAR · ${i.progress}% realization`)} className="w-full text-left grid grid-cols-12 items-center gap-3 px-3 py-3 rounded-xl bg-secondary/40 hover-elevate transition-all cursor-pointer">
               <div className="col-span-5">
                 <div className="font-mono text-[10.5px] text-muted-foreground">{i.id}</div>
                 <div className="text-[13px] font-semibold">{i.name}</div>
@@ -417,7 +421,7 @@ export function ValuePage() {
                 </div>
                 <MiniProgress value={i.progress} tone={i.progress < 50 ? "warn" : "primary"} />
               </div>
-            </div>
+            </button>
           ))}
         </div>
       </SectionCard>
@@ -509,6 +513,8 @@ export function ReportingPage({ onOpenAI }: { onOpenAI: () => void }) {
 
 /* ============================ INTEGRATIONS ============================ */
 export function IntegrationsPage() {
+  const { toast } = useToast();
+  const showItem = (title: string, desc: string) => () => toast({ title, description: desc });
   const flow = [
     { name: "Source systems",  d: "Jira · Azure DevOps · ServiceNow · SAP · GitHub · Power BI", i: Database },
     { name: "Connector tier",   d: "API · Webhook · Scheduled batch · CDC streams",              i: Cable },
@@ -523,21 +529,21 @@ export function IntegrationsPage() {
         eyebrow="Integration Layer"
         title="Connectors, sync health and integration architecture"
         subtitle="The portfolio service is the source of truth — populated from operational systems through API, webhook, CDC and scheduled batch."
-        actions={<Button variant="outline" className="h-9 rounded-xl gap-1.5"><RefreshCcw className="size-3.5" /> Sync all</Button>}
+        actions={<Button onClick={() => toast({ title: "Sync triggered", description: "All connectors are re-syncing in the background." })} variant="outline" className="h-9 rounded-xl gap-1.5"><RefreshCcw className="size-3.5" /> Sync all</Button>}
       />
 
       <SectionCard title="Integration Flow" subtitle="Conceptual data flow from source systems to the portal">
         <div className="grid grid-cols-1 md:grid-cols-5 gap-2 md:gap-3">
           {flow.map((f, i) => (
             <div key={f.name} className="relative">
-              <div className="rounded-2xl bg-secondary/50 p-4 h-full border border-border/60">
+              <button onClick={showItem(f.name, f.d)} className="w-full text-left rounded-2xl bg-secondary/50 p-4 h-full border border-border/60 hover-elevate transition-all cursor-pointer">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="size-7 rounded-lg bg-primary/15 text-primary grid place-items-center"><f.i className="size-3.5" /></div>
                   <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Layer {i + 1}</div>
                 </div>
                 <div className="font-display text-[13.5px] font-semibold">{f.name}</div>
                 <div className="text-[11px] text-muted-foreground mt-1.5 leading-snug">{f.d}</div>
-              </div>
+              </button>
               {i < flow.length - 1 && (
                 <ArrowRight className="hidden md:block size-4 text-muted-foreground absolute -right-3 top-1/2 -translate-y-1/2 z-10" />
               )}
@@ -549,7 +555,7 @@ export function IntegrationsPage() {
       <SectionCard title="Connected Systems" subtitle="Live sync health">
         <div className="grid lg:grid-cols-3 md:grid-cols-2 gap-3">
           {integrations.map(c => (
-            <div key={c.name} className="rounded-xl border border-card-border bg-card p-3.5 hover-elevate transition-all">
+            <button key={c.name} onClick={showItem(c.name, `${c.category} · health ${c.health}% · ${c.mode} · last sync ${c.lastSync}`)} className="w-full text-left rounded-xl border border-card-border bg-card p-3.5 hover-elevate transition-all cursor-pointer">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <div className="size-9 rounded-lg bg-secondary grid place-items-center"><Plug className="size-4" /></div>
@@ -572,9 +578,9 @@ export function IntegrationsPage() {
               </div>
               <div className="mt-2 pt-2 border-t border-border/60 flex items-center justify-between text-[10.5px] text-muted-foreground">
                 <span>Last sync · {c.lastSync}</span>
-                <Button variant="ghost" size="sm" className="h-6 px-1.5 text-[10.5px]"><RefreshCcw className="size-3" /></Button>
+                <Button onClick={(e) => { e.stopPropagation(); toast({ title: `Sync · ${c.name}`, description: "Syncing now." }); }} variant="ghost" size="sm" className="h-6 px-1.5 text-[10.5px]"><RefreshCcw className="size-3" /></Button>
               </div>
-            </div>
+            </button>
           ))}
         </div>
       </SectionCard>
@@ -584,6 +590,8 @@ export function IntegrationsPage() {
 
 /* ============================ GOVERNANCE / AUDIT ============================ */
 export function GovernancePage() {
+  const { toast } = useToast();
+  const showItem = (title: string, desc: string) => () => toast({ title, description: desc });
   return (
     <div className="space-y-6">
       <PageHeader
@@ -602,7 +610,7 @@ export function GovernancePage() {
       <SectionCard title="Activity Log" subtitle="Most recent 24 hours">
         <div className="space-y-1.5">
           {auditLog.map((a, i) => (
-            <div key={i} className="grid grid-cols-12 gap-2 px-3 py-2.5 rounded-lg bg-secondary/40 hover-elevate transition-all text-[12px]">
+            <button key={i} onClick={showItem(`${a.ts} · ${a.actor}`, `${a.action} · target ${a.target} · ${a.severity}`)} className="w-full text-left grid grid-cols-12 gap-2 px-3 py-2.5 rounded-lg bg-secondary/40 hover-elevate transition-all text-[12px] cursor-pointer">
               <div className="col-span-3 font-mono text-[10.5px] text-muted-foreground tabular-nums">{a.ts}</div>
               <div className="col-span-2 truncate">{a.actor}</div>
               <div className="col-span-5 truncate">{a.action}</div>
@@ -610,7 +618,7 @@ export function GovernancePage() {
               <div className="col-span-1 text-right">
                 <StatusPill>{a.severity === "Critical" ? "Critical" : a.severity === "Warn" ? "Warn" : "Info"}</StatusPill>
               </div>
-            </div>
+            </button>
           ))}
         </div>
       </SectionCard>
@@ -626,14 +634,14 @@ export function GovernancePage() {
               { r: "Squad Member",  scope: "Read assigned · update tasks · documentation",             users: 118 },
               { r: "Auditor",       scope: "Read all · audit log · exports",                            users: 5 },
             ].map(r => (
-              <div key={r.r} className="grid grid-cols-12 items-center gap-3 px-3 py-2.5 rounded-xl bg-secondary/40">
+              <button key={r.r} onClick={showItem(r.r, `${r.scope} · ${r.users} users`)} className="w-full text-left grid grid-cols-12 items-center gap-3 px-3 py-2.5 rounded-xl bg-secondary/40 hover-elevate transition-all cursor-pointer">
                 <div className="col-span-3 flex items-center gap-2">
                   <ShieldCheck className="size-3.5 text-primary" />
                   <span className="font-semibold text-[12.5px]">{r.r}</span>
                 </div>
                 <div className="col-span-7 text-[11.5px] text-muted-foreground truncate">{r.scope}</div>
                 <div className="col-span-2 text-right text-[11.5px] tabular-nums">{r.users} users</div>
-              </div>
+              </button>
             ))}
           </div>
         </SectionCard>
@@ -648,14 +656,14 @@ export function GovernancePage() {
               { t: "Cyber Architecture Pattern Library", k: "Reference",    at: "5 days ago"  },
               { t: "Vision 2030 Mapping Workbook",       k: "Workbook",     at: "2 days ago"  },
             ].map(d => (
-              <div key={d.t} className="flex items-center gap-3 px-3 py-2 rounded-xl bg-secondary/40 hover-elevate transition-all">
+              <button key={d.t} onClick={showItem(d.t, `${d.k} · updated ${d.at}`)} className="w-full text-left flex items-center gap-3 px-3 py-2 rounded-xl bg-secondary/40 hover-elevate transition-all cursor-pointer">
                 <BookOpen className="size-3.5 text-muted-foreground shrink-0" />
                 <div className="flex-1 min-w-0">
                   <div className="text-[12.5px] font-medium truncate">{d.t}</div>
                   <div className="text-[10.5px] text-muted-foreground">{d.k} · updated {d.at}</div>
                 </div>
-                <Button variant="ghost" size="sm" className="h-7 px-2 text-[11px]">Open</Button>
-              </div>
+                <span className="text-[11px] font-medium text-primary px-2">Open</span>
+              </button>
             ))}
           </div>
         </SectionCard>
@@ -666,6 +674,8 @@ export function GovernancePage() {
 
 /* ============================ SQUADS ============================ */
 export function SquadsPage() {
+  const { toast } = useToast();
+  const showItem = (title: string, desc: string) => () => toast({ title, description: desc });
   return (
     <div className="space-y-6">
       <PageHeader
@@ -677,7 +687,7 @@ export function SquadsPage() {
         {squadCapacity.map(s => {
           const pct = Math.round((s.allocated / s.capacity) * 100);
           return (
-            <div key={s.squad} className="rounded-2xl bg-card border border-card-border p-5 shadow-soft">
+            <button key={s.squad} onClick={showItem(s.squad, `${s.members} members · ${s.allocated}/${s.capacity} sp · ${pct}% allocated`)} className="w-full text-left rounded-2xl bg-card border border-card-border p-5 shadow-soft hover-elevate transition-all cursor-pointer">
               <div className="flex items-center justify-between mb-2">
                 <div>
                   <div className="font-display text-[16px] font-semibold">{s.squad}</div>
@@ -689,7 +699,7 @@ export function SquadsPage() {
                 <div className="flex-1"><MiniProgress value={Math.min(100, pct)} tone={pct > 100 ? "warn" : "primary"} /></div>
                 <span className="text-[12.5px] font-semibold tabular-nums">{pct}%</span>
               </div>
-              <div className="h-[120px] mt-4">
+              <div className="h-[120px] mt-4 pointer-events-none">
                 <ResponsiveContainer>
                   <AreaChart data={s.burnup.map((v, i) => ({ sprint: `S${i + 1}`, v }))} margin={{ top: 6, right: 6, bottom: 0, left: -30 }}>
                     <defs>
@@ -705,7 +715,7 @@ export function SquadsPage() {
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
-            </div>
+            </button>
           );
         })}
       </div>
@@ -715,6 +725,8 @@ export function SquadsPage() {
 
 /* ============================ MILESTONES ============================ */
 export function MilestonesPage() {
+  const { toast } = useToast();
+  const showItem = (title: string, desc: string) => () => toast({ title, description: desc });
   return (
     <div className="space-y-6">
       <PageHeader
@@ -728,7 +740,7 @@ export function MilestonesPage() {
             <div key={m.id} className="relative">
               <div className={`absolute -left-[31px] top-1.5 size-3 rounded-full ring-4 ring-background
                 ${m.status === "Delayed" ? "bg-bad" : m.status === "At Risk" ? "bg-warn" : "bg-primary"}`} />
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 px-3 py-3 rounded-xl bg-secondary/40">
+              <button onClick={showItem(`${m.id} · ${m.title}`, `${m.project} · ${m.status} · due ${m.date}`)} className="w-full text-left flex flex-col md:flex-row md:items-center justify-between gap-2 px-3 py-3 rounded-xl bg-secondary/40 hover-elevate transition-all cursor-pointer">
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-[10.5px] font-mono text-muted-foreground">{m.id}</span>
@@ -738,7 +750,7 @@ export function MilestonesPage() {
                   <div className="text-[14px] font-semibold mt-1">{m.title}</div>
                 </div>
                 <div className="text-[12.5px] tabular-nums text-muted-foreground">{m.date}</div>
-              </div>
+              </button>
             </div>
           ))}
         </div>
@@ -749,6 +761,8 @@ export function MilestonesPage() {
 
 /* ============================ SPRINT (alias of tech board minimal) ============================ */
 export function SprintPage() {
+  const { toast } = useToast();
+  const showItem = (title: string, desc: string) => () => toast({ title, description: desc });
   return (
     <div className="space-y-6">
       <PageHeader
@@ -768,7 +782,7 @@ export function SprintPage() {
                 </div>
                 <div className="space-y-2">
                   {items.map((c: any) => (
-                    <div key={c.id} className="bg-card rounded-xl border border-card-border p-3 shadow-soft hover-elevate">
+                    <button key={c.id} onClick={showItem(`${c.id} · ${c.title}`, `${c.type} · ${c.assignee} · ${c.points}sp`)} className="w-full text-left bg-card rounded-xl border border-card-border p-3 shadow-soft hover-elevate cursor-pointer">
                       <div className="flex items-center gap-2 mb-1.5">
                         <span className="text-[10px] font-mono text-muted-foreground">{c.id}</span>
                         <Tag tone="purple">{c.type}</Tag>
@@ -778,7 +792,7 @@ export function SprintPage() {
                         <span className="text-[10.5px] text-muted-foreground">{c.assignee}</span>
                         <span className="text-[10.5px] font-semibold px-1.5 py-0.5 rounded-md bg-muted">{c.points}sp</span>
                       </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
               </div>
@@ -821,6 +835,8 @@ export function ApprovalsPage() {
 
 /* ============================ ARCHITECTURE ============================ */
 export function ArchitecturePage() {
+  const { toast } = useToast();
+  const showItem = (title: string, desc: string) => () => toast({ title, description: desc });
   return (
     <div className="space-y-6">
       <PageHeader eyebrow="Architecture & Data" title="Solution & data architecture status" />
@@ -834,10 +850,10 @@ export function ArchitecturePage() {
               { l: "Integration patterns",     s: "In Review" },
               { l: "Non-functional reqs",      s: "Approved" },
             ].map(x => (
-              <div key={x.l} className="flex items-center justify-between text-[12.5px] px-3 py-2 rounded-xl bg-secondary/40">
+              <button key={x.l} onClick={showItem(x.l, `Status: ${x.s}`)} className="w-full text-left flex items-center justify-between text-[12.5px] px-3 py-2 rounded-xl bg-secondary/40 hover-elevate transition-all cursor-pointer">
                 <span>{x.l}</span>
                 <StatusPill>{x.s === "Approved" ? "On Track" : "At Risk"}</StatusPill>
-              </div>
+              </button>
             ))}
           </div>
         </SectionCard>
@@ -849,10 +865,10 @@ export function ArchitecturePage() {
               { l: "MDM golden records",       s: "In Progress" },
               { l: "Data contracts (active)",  s: "31 contracts" },
             ].map(x => (
-              <div key={x.l} className="flex items-center justify-between text-[12.5px] px-3 py-2 rounded-xl bg-secondary/40">
+              <button key={x.l} onClick={showItem(x.l, `Status: ${x.s}`)} className="w-full text-left flex items-center justify-between text-[12.5px] px-3 py-2 rounded-xl bg-secondary/40 hover-elevate transition-all cursor-pointer">
                 <span>{x.l}</span>
                 <span className="text-[11.5px] font-semibold">{x.s}</span>
-              </div>
+              </button>
             ))}
           </div>
         </SectionCard>
@@ -862,10 +878,10 @@ export function ArchitecturePage() {
               { l: "SAST", v: "Pass" }, { l: "DAST", v: "Pass" }, { l: "License scan", v: "Pass" },
               { l: "Cost guardrails", v: "Pass" }, { l: "Privacy DPIA", v: "Pending" },
             ].map(x => (
-              <div key={x.l} className="flex items-center justify-between text-[12.5px] px-3 py-2 rounded-xl bg-secondary/40">
+              <button key={x.l} onClick={showItem(x.l, `Result: ${x.v}`)} className="w-full text-left flex items-center justify-between text-[12.5px] px-3 py-2 rounded-xl bg-secondary/40 hover-elevate transition-all cursor-pointer">
                 <span>{x.l}</span>
                 <StatusPill>{x.v === "Pass" ? "On Track" : "At Risk"}</StatusPill>
-              </div>
+              </button>
             ))}
           </div>
         </SectionCard>
