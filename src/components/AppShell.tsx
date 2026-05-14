@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import {
   LayoutDashboard, Inbox, FolderKanban, KanbanSquare, Users, Wallet, Building2,
   ShieldAlert, Flag, Sparkles, FileBarChart2, FileCheck2, Plug,
@@ -219,18 +219,16 @@ export function AppShell({ children, onOpenAI }: { children: ReactNode; onOpenAI
         <header className="sticky top-0 z-30 glass-panel border-b border-border">
           <div className="h-16 px-4 lg:px-8 flex items-center gap-3 lg:gap-4">
             {/* Mobile hamburger */}
-            <SheetTrigger asChild>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="lg:hidden rounded-xl shrink-0"
-                onClick={() => setMobileOpen(true)}
-                data-testid="button-mobile-menu"
-                aria-label="Open menu"
-              >
-                <Menu className="size-5" />
-              </Button>
-            </SheetTrigger>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="lg:hidden rounded-xl shrink-0"
+              onClick={() => setMobileOpen(true)}
+              data-testid="button-mobile-menu"
+              aria-label="Open menu"
+            >
+              <Menu className="size-5" />
+            </Button>
 
             <div className="hidden md:flex items-center gap-2 text-[12px] text-muted-foreground">
               <span className="opacity-70">Workspace</span>
